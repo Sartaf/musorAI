@@ -1,0 +1,16 @@
+{
+  "name": "moyi-prava",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "serve": "npx serve www",
+    "android:add": "npx cap add android",
+    "android:sync": "npx cap sync android",
+    "android:open": "npx cap open android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.0.0",
+    "@capacitor/cli": "^6.0.0",
+    "@capacitor/core": "^6.0.0"
+  }
+}
