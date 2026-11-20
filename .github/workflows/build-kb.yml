@@ -1,0 +1,22 @@
+name: Build knowledge base
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  kb:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/build_kb.py
+      - name: Commit knowledge/
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add knowledge
+          if git diff --cached --quiet; then
+            echo "Без змін"
+          else
+            git commit -m "Оновлено базу знань"
+            git push
+          fi
