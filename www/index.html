@@ -20,6 +20,8 @@ li{display:flex;gap:12px}li i{flex:none;width:26px;height:26px;border-radius:13p
 .b{display:flex;align-items:center;justify-content:center;box-sizing:border-box;min-height:48px;border-radius:12px;border:1px solid var(--ac);background:transparent;color:var(--ac);font-weight:600;padding:0 14px;text-decoration:none}
 .p{background:var(--ac);color:var(--on);border:0;font-weight:700}
 .row{display:flex;gap:10px;margin-top:10px}.row>*{flex:1}
+.rec{background:#b3261e!important;color:#fff!important;border-color:#b3261e!important}
+#toast{position:fixed;left:12px;right:12px;bottom:18px;background:#222;color:#fff;padding:12px 14px;border-radius:12px;z-index:9;font-size:14px;line-height:1.4}
 .split{display:flex;min-width:0}.split .b{flex:1;padding:0 8px}.split .b:first-child{border-radius:12px 0 0 12px}.split .b:last-child{border-radius:0 12px 12px 0;border-left:0}
 .chip{display:inline-block;font-size:12px;padding:6px 10px;border-radius:999px;background:var(--card);margin:0 6px 6px 0;border:1px solid var(--line)}
 textarea{width:100%;box-sizing:border-box;min-height:84px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--tx);padding:12px 14px;font:inherit;resize:vertical;margin-bottom:10px}
@@ -31,13 +33,57 @@ label small{display:block;color:var(--mu);margin:16px 0 6px}
 </style></head><body><div id="app"></div>
 <script src="config.js"></script>
 <script>
-let D=[];
+let D=[],rec=null,t0=0;
 const A=document.getElementById('app'),L=()=>{try{return localStorage.getItem('sos')||''}catch(e){return ''}};
-const sos=()=>`<label><small>Номер SOS-контакту</small><input type="tel" id="tel" value="${L()}" placeholder="+380…"></label><div class="row"><button class="b p" data-sos>Надіслати SOS</button><div class="split"><label class="b">Відео<input type="file" accept="video/*" capture hidden></label><label class="b">Диктофон<input type="file" accept="audio/*" capture hidden></label></div></div>`;
+const sos=()=>`<label><small>Номер SOS-контакту</small><input type="tel" id="tel" value="${L()}" placeholder="+380…"></label><div class="row"><button class="b p" data-sos>Надіслати SOS</button><div class="split"><label class="b">Відео<input type="file" accept="video/*" capture hidden></label><button class="b${rec?' rec':''}" data-rec>${rec?'■ Стоп':'Диктофон'}</button></div></div>`;
 function home(){A.innerHTML=`<h1>Мої права</h1><p class="mu">Що сталося? Оберіть ситуацію</p><div class="g">${D.map(d=>`<button class="c" data-k="${d.id}"><b>${d.title}</b><span>${d.subtitle}</span></button>`).join('')}</div><div class="box" style="margin-top:14px"><small>Не знайшли ситуацію? Запитайте ШІ-довідник</small><textarea id="q" placeholder="Опишіть ситуацію своїми словами"></textarea><button class="b p" style="width:100%" data-ask>Запитати</button><div id="ans"></div></div>${sos()}<p class="n">Довідкова інформація, а не юридична консультація. Тексти потребують перевірки юристом.</p>`}
 function show(k){const d=D.find(x=>x.id===k);A.innerHTML=`<button class="b back" data-back>← Назад</button><h1>${d.title}</h1><ol>${d.steps.map((x,i)=>`<li><i>${i+1}</i><span>${x.text}<small class="nm">Підстава: ${x.ref} · ${x.found?'знайдено в джерелах':'потребує перевірки'}</small></span></li>`).join('')}</ol><div class="box"><small>Скажіть вголос</small><p>«${d.phrase}»</p><button class="b" style="width:100%" data-say="${k}">Озвучити фразу</button></div><div><span class="chip">Потрібна перевірка юриста</span></div>${sos()}`}
-A.onclick=e=>{const k=e.target.closest('[data-k]');if(k)return show(k.dataset.k);if(e.target.closest('[data-back]'))return home();const s=e.target.closest('[data-say]');if(s){speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(D.find(x=>x.id===s.dataset.say).phrase);u.lang='uk-UA';speechSynthesis.speak(u)}if(e.target.closest('[data-sos]')){const n=document.getElementById('tel').value.trim();if(n)location.href='sms:'+n+'?body='+encodeURIComponent('Мені потрібна допомога. Зі мною зупинилася поліція або ТЦК.')}};
+A.onclick=e=>{const k=e.target.closest('[data-k]');if(k)return show(k.dataset.k);if(e.target.closest('[data-back]'))return home();const s=e.target.closest('[data-say]');if(s){say(D.find(x=>x.id===s.dataset.say).phrase)}if(e.target.closest('[data-rec]'))toggleRec();if(e.target.closest('[data-sos]')){const n=document.getElementById('tel').value.trim();if(n)location.href='sms:'+n+'?body='+encodeURIComponent('Мені потрібна допомога. Зі мною зупинилася поліція або ТЦК.')}};
 A.onchange=e=>{if(e.target.id==='tel'){try{localStorage.setItem('sos',e.target.value)}catch(x){}}};
+function toast(m){let t=document.getElementById('toast');if(!t){t=document.createElement('div');t.id='toast';document.body.appendChild(t)}t.textContent=m;t.style.display='block';clearTimeout(t._h);t._h=setTimeout(()=>{t.style.display='none'},6000)}
+async function say(text){
+  const P=window.Capacitor&&Capacitor.Plugins,T=P&&P.TextToSpeech;
+  if(T){
+    try{
+      let ok=true;try{ok=(await T.isLanguageSupported({lang:'uk-UA'})).supported}catch(e){}
+      if(!ok){toast('Немає українського голосу. Android: Налаштування → Мова → Синтез мовлення → Українська.');return}
+      try{await T.stop()}catch(e){}
+      await T.speak({text:text,lang:'uk-UA',rate:0.95,pitch:1,volume:1});return
+    }catch(e){}
+  }
+  if(!window.speechSynthesis){toast('Озвучення недоступне на цьому пристрої.');return}
+  speechSynthesis.cancel();
+  setTimeout(()=>{const v=speechSynthesis.getVoices().find(x=>/^uk/i.test(x.lang));const u=new SpeechSynthesisUtterance(text);u.lang='uk-UA';if(v)u.voice=v;u.rate=0.95;u.onerror=()=>toast('Не вдалося озвучити фразу.');speechSynthesis.speak(u)},120)
+}
+function recUI(){const s=Math.floor((Date.now()-t0)/1000),m=String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');document.querySelectorAll('[data-rec]').forEach(b=>{b.textContent=rec?'■ Стоп '+m:'Диктофон';b.classList.toggle('rec',!!rec)})}
+async function toggleRec(){
+  if(rec){rec.stop();return}
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    const mime=['audio/mp4','audio/webm;codecs=opus','audio/webm'].find(t=>window.MediaRecorder&&MediaRecorder.isTypeSupported(t))||'';
+    const chunks=[],mr=new MediaRecorder(stream,mime?{mimeType:mime}:{});
+    let wl=null;try{wl=await navigator.wakeLock.request('screen')}catch(e){}
+    mr.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data)};
+    const tick=setInterval(recUI,500);
+    mr.onstop=async()=>{clearInterval(tick);stream.getTracks().forEach(t=>t.stop());try{wl&&wl.release()}catch(e){}rec=null;recUI();await saveAudio(new Blob(chunks,{type:mr.mimeType||'audio/webm'}),mr.mimeType||'')};
+    mr.start(1000);rec=mr;t0=Date.now();recUI()
+  }catch(e){toast('Немає доступу до мікрофона. Дозвольте його в налаштуваннях застосунку.')}
+}
+async function saveAudio(blob,mime){
+  const ext=/mp4/.test(mime)?'m4a':'webm',name='zapys-'+new Date().toISOString().replace(/[:.]/g,'-').slice(0,19)+'.'+ext;
+  const P=window.Capacitor&&Capacitor.Plugins;
+  if(P&&P.Filesystem){
+    try{
+      const b64=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result).split(',')[1]);r.onerror=rej;r.readAsDataURL(blob)});
+      const c=await P.Filesystem.writeFile({path:name,data:b64,directory:'CACHE'});
+      try{await P.Filesystem.writeFile({path:'MoyiPrava/'+name,data:b64,directory:'DOCUMENTS',recursive:true});toast('Запис збережено: Документи/MoyiPrava/'+name);return}catch(e){}
+      if(P.Share){await P.Share.share({title:'Запис',url:c.uri});return}
+      toast('Запис збережено в тимчасову папку застосунку.');return
+    }catch(e){}
+  }
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000);toast('Запис збережено в завантаження.')
+}
+
 function ask(){const q=document.getElementById('q').value.trim(),o=document.getElementById('ans');if(!q)return;if(!window.API_URL){o.textContent='ШІ-довідник ще не підключено. Скористайтеся сценаріями.';return}o.textContent='Шукаю в базі…';fetch(window.API_URL+'/api/ask',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question:q})}).then(r=>r.json()).then(j=>{o.textContent=j.answer||j.error||'Помилка'}).catch(()=>{o.textContent='Немає зв’язку. Скористайтеся сценаріями.'})}
 A.addEventListener('click',e=>{if(e.target.closest('[data-ask]'))ask()});
 fetch('scenarios.json').then(r=>r.json()).then(j=>{D=j;home()}).catch(()=>{A.innerHTML='<p class="mu">Не вдалося завантажити дані.</p>'});
