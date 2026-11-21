@@ -1,0 +1,6 @@
+rada http 000
+curl failed
+[!] konstytutsiia: не вдалося завантажити (<urlopen error timed out>). Збережіть текст вручну в knowledge/konstytutsiia.md
+[!] npu: не вдалося завантажити (<urlopen error timed out>). Збережіть текст вручну в knowledge/npu.md
+[!] kupap: не вдалося завантажити (<urlopen error timed out>). Збережіть текст вручну в knowledge/kupap.md
+[!] kpk: не вдалося завантажити (<urlopen error timed out>). Збережіть текст вручну в knowledge/kpk.md
