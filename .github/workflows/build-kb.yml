@@ -12,7 +12,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: main
-      - run: python3 scripts/build_kb.py
+      - name: Build
+        run: |
+          mkdir -p knowledge
+          { curl -s -m 30 -o /dev/null -w "rada http %{http_code}\n" -A "Mozilla/5.0" "https://zakon.rada.gov.ua/laws/show/580-19/print" || echo "curl failed"; python3 scripts/build_kb.py; } 2>&1 | tee knowledge/_build.log
       - name: Commit knowledge/
         run: |
           git config user.name "github-actions"
