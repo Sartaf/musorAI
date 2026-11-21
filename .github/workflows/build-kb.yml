@@ -12,6 +12,12 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: main
+      - name: Probe sources
+        run: |
+          for u in https://zakon.rada.gov.ua/laws/show/580-19 https://data.rada.gov.ua/ https://www.president.gov.ua/ua/documents/constitution/konstituciya-ukrayini-rozdil-ii https://ips.ligazakon.net/ https://www.ukraine.com.ua/laws/kupap/268/ https://kodeksy.com.ua/kpku-2012/236.htm https://protocol.ua/ua/pro_natsionalnu_politsiyu_stattya_32/; do
+            c=$(curl -s -m 12 -o /dev/null -w "%{http_code}" -A "Mozilla/5.0" "$u" || true)
+            echo "$c $u"
+          done | tee knowledge/_probe.log
       - name: Build
         run: |
           mkdir -p knowledge

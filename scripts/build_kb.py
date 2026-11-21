@@ -18,7 +18,7 @@ OUT = os.path.join(HERE, "..", "knowledge")
 def fetch(code):
     url = "https://zakon.rada.gov.ua/laws/show/%s/print" % code
     req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (musorAI kb builder)"})
-    return urllib.request.urlopen(req, timeout=90).read().decode("utf-8", errors="replace")
+    return urllib.request.urlopen(req, timeout=20).read().decode("utf-8", errors="replace")
 
 
 def to_text(h):
