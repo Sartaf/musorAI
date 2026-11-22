@@ -1,40 +1,100 @@
 #!/usr/bin/env python3
-"""Завантажує потрібні статті з zakon.rada.gov.ua у knowledge/*.md.
+"""Збирає базу знань: вибирає потрібні статті з ПОВНИХ офіційних текстів законів.
+
+Куди класти тексти: sources/<назва>.txt (або .html, .md, .docx), де <назва> береться
+з scripts/kb_articles.json (npu, kupap, kpk, konstytutsiia).
+Тексти завантажуємо з офіційного сайту zakon.rada.gov.ua (кнопка "Завантажити").
+Результат: knowledge/<назва>.md. Слово в слово, без переписування.
 
 Запуск: python3 scripts/build_kb.py
-Список статей редагується в scripts/kb_articles.json.
-Якщо сайт не віддає текст, збережіть його вручну в knowledge/<назва>.md.
+Якщо локального файлу немає, скрипт пробує завантажити текст з zakon.rada.gov.ua
+(це може не працювати з-за кордону).
 """
 import html
 import json
 import os
 import re
+import sys
 import urllib.request
+import zipfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-OUT = os.path.join(HERE, "..", "knowledge")
+ROOT = os.path.join(HERE, "..")
+SRC = os.path.join(ROOT, "sources")
+OUT = os.path.join(ROOT, "knowledge")
 
 
-def fetch(code):
-    url = "https://zakon.rada.gov.ua/laws/show/%s/print" % code
-    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (musorAI kb builder)"})
-    return urllib.request.urlopen(req, timeout=20).read().decode("utf-8", errors="replace")
-
-
-def to_text(h):
+def html_to_text(h):
     h = re.sub(r"(?is)<(script|style).*?</\1>", "", h)
     h = re.sub(r"(?i)<br\s*/?>|</p>|</div>|</h\d>|</tr>", "\n", h)
     h = re.sub(r"<[^>]+>", "", h)
-    return html.unescape(h).replace("\xa0", " ")
+    return html.unescape(h)
 
 
-def articles(text):
+def docx_to_text(path):
+    with zipfile.ZipFile(path) as z:
+        xml = z.read("word/document.xml").decode("utf-8", errors="replace")
+    xml = re.sub(r"</w:p>", "\n", xml)
+    xml = re.sub(r"<w:tab/>", " ", xml)
+    xml = re.sub(r"<[^>]+>", "", xml)
+    return html.unescape(xml)
+
+
+def read_local(slug):
+    for ext in ("txt", "md", "html", "htm", "docx"):
+        p = os.path.join(SRC, "%s.%s" % (slug, ext))
+        if not os.path.exists(p):
+            continue
+        if ext == "docx":
+            return docx_to_text(p), p
+        raw = open(p, "rb").read()
+        for enc in ("utf-8-sig", "cp1251"):
+            try:
+                t = raw.decode(enc)
+                break
+            except UnicodeDecodeError:
+                t = None
+        if t is None:
+            t = raw.decode("utf-8", errors="replace")
+        return (html_to_text(t) if ext in ("html", "htm") else t), p
+    return None, None
+
+
+def fetch_remote(code):
+    url = "https://zakon.rada.gov.ua/laws/show/%s/print" % code
+    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (musorAI kb builder)"})
+    return html_to_text(urllib.request.urlopen(req, timeout=20).read().decode("utf-8", errors="replace"))
+
+
+def normalize(t):
+    t = t.replace("\xa0", " ").replace("\r\n", "\n").replace("\r", "\n")
+    return re.sub(r"[ \t]+\n", "\n", t)
+
+
+def split_articles(text):
+    """Повертає {номер: текст} за заголовками "Стаття N." (перше входження)."""
     out = {}
-    for part in re.split(r"\n\s*(?=Стаття\s+\d+(?:-\d+)?\.)", text):
-        m = re.match(r"Стаття\s+(\d+(?:-\d+)?)\.", part)
+    for part in re.split(r"\n\s*(?=Стаття\s+\d+(?:-\d+)?\.)", "\n" + text):
+        m = re.match(r"\s*Стаття\s+(\d+(?:-\d+)?)\.", part)
         if m and m.group(1) not in out:
             out[m.group(1)] = re.sub(r"\n{3,}", "\n\n", part).strip()
     return out
+
+
+def wanted(keys, cfg):
+    exact = set(cfg.get("articles", []))
+    ranges = cfg.get("ranges", [])
+    res = []
+    for k in keys:
+        base = int(k.split("-")[0])
+        if k in exact or any(a <= base <= b for a, b in ranges):
+            res.append(k)
+    return res
+
+
+def sort_key(k):
+    p = k.split("-")
+    return (int(p[0]), int(p[1]) if len(p) > 1 else 0)
 
 
 def main():
@@ -42,25 +102,29 @@ def main():
         cfg = json.load(f)
     os.makedirs(OUT, exist_ok=True)
     for slug, c in cfg.items():
-        try:
-            arts = articles(to_text(fetch(c["code"])))
-        except Exception as e:
-            print("[!] %s: не вдалося завантажити (%s). Збережіть текст вручну в knowledge/%s.md" % (slug, e, slug))
+        text, path = read_local(slug)
+        origin = "завантажено вручну з офіційного сайту zakon.rada.gov.ua"
+        if text is None:
+            try:
+                text, origin = fetch_remote(c["code"]), "завантажено з zakon.rada.gov.ua"
+            except Exception as e:
+                print("[пропущено] %s: немає sources/%s.txt, а завантаження не вдалося (%s)" % (slug, slug, e))
+                continue
+        arts = split_articles(normalize(text))
+        keys = sorted(wanted(arts.keys(), c), key=sort_key)
+        listed = set(c.get("articles", []))
+        missing = [a for a in c.get("articles", []) if a not in arts]
+        if not keys:
+            print("[!] %s: статті не знайдено, перевірте формат файлу" % slug)
             continue
-        parts, missing = [], []
-        for n in c["articles"]:
-            if n in arts:
-                parts.append(arts[n])
-            else:
-                missing.append(n)
-        head = "# %s (витяг, офіційний текст з zakon.rada.gov.ua)\n\n" % c["title"]
+        head = "# %s (витяг)\n\nДжерело: %s. Офіційна сторінка: https://zakon.rada.gov.ua/laws/show/%s\nСтатті подано без змін, як у вихідному тексті.\n\n" % (c["title"], origin, c["code"])
         with open(os.path.join(OUT, slug + ".md"), "w", encoding="utf-8") as f:
-            f.write(head + "\n\n".join(parts) + "\n")
-        msg = "%s: %d статей" % (slug, len(parts))
+            f.write(head + "\n\n".join(arts[k] for k in keys) + "\n")
+        msg = "%s: %d статей (%d символів)" % (slug, len(keys), sum(len(arts[k]) for k in keys))
         if missing:
-            msg += ", не знайдено: " + ", ".join(missing)
+            msg += "; не знайдено: " + ", ".join(missing)
         print(msg)
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
