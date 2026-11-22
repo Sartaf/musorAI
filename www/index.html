@@ -29,6 +29,10 @@ li{display:flex;gap:12px}li i{flex:none;width:26px;height:26px;border-radius:13p
 .row{display:flex;gap:10px;margin-top:10px}.row>*{flex:1}
 .rec{background:#b3261e!important;color:#fff!important;border-color:#b3261e!important}
 #toast{position:fixed;left:12px;right:12px;bottom:18px;background:#222;color:#fff;padding:12px 14px;border-radius:12px;z-index:9;font-size:14px;line-height:1.4}
+@media(min-width:700px){#app{max-width:1100px}.cols{display:grid;grid-template-columns:1.5fr 1fr;gap:24px;align-items:start}.g{grid-template-columns:repeat(3,1fr)}.c{min-height:104px}aside .box:first-child{margin-top:0}}
+@media(min-width:1000px){.g{grid-template-columns:repeat(4,1fr)}}
+@media(orientation:landscape) and (max-height:520px){#app{padding:10px 16px 16px}h1{font-size:22px}.mu{margin:2px 0 8px}.c{min-height:84px;padding:10px}ol{gap:8px;margin:10px 0}.box{margin:10px 0;padding:10px 14px}textarea{min-height:56px}}
+audio{display:block}
 .split{display:flex;min-width:0}.split .b{flex:1;padding:0 8px}.split .b:first-child{border-radius:12px 0 0 12px}.split .b:last-child{border-radius:0 12px 12px 0;border-left:0}
 .chip{display:inline-block;font-size:12px;padding:6px 10px;border-radius:999px;background:var(--card);margin:0 6px 6px 0;border:1px solid var(--line)}
 textarea{width:100%;box-sizing:border-box;min-height:84px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--tx);padding:12px 14px;font:inherit;resize:vertical;margin-bottom:10px}
@@ -40,11 +44,14 @@ label small{display:block;color:var(--mu);margin:16px 0 6px}
 </style></head><body><div id="app"></div>
 <script src="config.js"></script>
 <script>
+const BUILD='2026-11-22a';
 let D=[],rec=null,t0=0;
+const native=()=>!!(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform());
+const recBtn=()=>native()?'<button class="b" style="width:100%;margin-top:10px" data-records>Мої записи</button>':'';
 const A=document.getElementById('app'),L=()=>{try{return localStorage.getItem('sos')||''}catch(e){return ''}};
 const sos=()=>`<label><small>Номер SOS-контакту</small><input type="tel" id="tel" value="${L()}" placeholder="+380…"></label><div class="row"><button class="b p" data-sos>Надіслати SOS</button><div class="split"><label class="b">Відео<input type="file" accept="video/*" capture hidden></label><button class="b${rec?' rec':''}" data-rec>${rec?'■ Стоп':'Диктофон'}</button></div></div>`;
-function home(){A.innerHTML=`<h1>Мої права</h1><p class="mu">Що сталося? Оберіть ситуацію</p><div class="g">${D.map(d=>`<button class="c" data-k="${d.id}"><b>${d.title}</b><span>${d.subtitle}</span></button>`).join('')}</div><div class="box" style="margin-top:14px"><small>Не знайшли ситуацію? Запитайте ШІ-довідник</small><textarea id="q" placeholder="Опишіть ситуацію своїми словами"></textarea><button class="b p" style="width:100%" data-ask>Запитати</button><div id="ans"></div></div>${sos()}<p class="n">Довідкова інформація, а не юридична консультація. Тексти потребують перевірки юристом.</p>`}
-function show(k){const d=D.find(x=>x.id===k);A.innerHTML=`<button class="b back" data-back>← Назад</button><h1>${d.title}</h1><ol>${d.steps.map((x,i)=>`<li><i>${i+1}</i><span>${x.text}<small class="nm">Підстава: ${x.ref} · ${x.found?'знайдено в джерелах':'потребує перевірки'}</small></span></li>`).join('')}</ol><div class="box"><small>Скажіть вголос</small><p>«${d.phrase}»</p><button class="b" style="width:100%" data-say="${k}">Озвучити фразу</button></div><div><span class="chip">Потрібна перевірка юриста</span></div>${sos()}`}
+function home(){A.innerHTML=`<h1>Мої права</h1><p class="mu">Що сталося? Оберіть ситуацію</p><div class="cols"><div><div class="g">${D.map(d=>`<button class="c" data-k="${d.id}"><b>${d.title}</b><span>${d.subtitle}</span></button>`).join('')}</div></div><aside><div class="box" style="margin-top:0"><small>Не знайшли ситуацію? Запитайте ШІ-довідник</small><textarea id="q" placeholder="Опишіть ситуацію своїми словами"></textarea><button class="b p" style="width:100%" data-ask>Запитати</button><div id="ans"></div></div>${sos()}${recBtn()}</aside></div><p class="n">Довідкова інформація, а не юридична консультація. Тексти потребують перевірки юристом. Збірка ${BUILD}</p>`}
+function show(k){const d=D.find(x=>x.id===k);A.innerHTML=`<button class="b back" data-back>← Назад</button><h1>${d.title}</h1><div class="cols"><div><ol>${d.steps.map((x,i)=>`<li><i>${i+1}</i><span>${x.text}<small class="nm">Підстава: ${x.ref} · ${x.found?'знайдено в джерелах':'потребує перевірки'}</small></span></li>`).join('')}</ol></div><aside><div class="box"><small>Скажіть вголос</small><p>«${d.phrase}»</p><button class="b" style="width:100%" data-say="${k}">Озвучити фразу</button></div><div><span class="chip">Потрібна перевірка юриста</span></div>${sos()}</aside></div>`}
 A.onclick=e=>{const k=e.target.closest('[data-k]');if(k)return show(k.dataset.k);if(e.target.closest('[data-back]'))return home();const s=e.target.closest('[data-say]');if(s){say(D.find(x=>x.id===s.dataset.say).phrase)}if(e.target.closest('[data-rec]'))toggleRec();if(e.target.closest('[data-sos]')){const n=document.getElementById('tel').value.trim();if(n)location.href='sms:'+n+'?body='+encodeURIComponent('Мені потрібна допомога. Зі мною зупинилася поліція або ТЦК.')}};
 A.onchange=e=>{if(e.target.id==='tel'){try{localStorage.setItem('sos',e.target.value)}catch(x){}}};
 function toast(m){let t=document.getElementById('toast');if(!t){t=document.createElement('div');t.id='toast';document.body.appendChild(t)}t.textContent=m;t.style.display='block';clearTimeout(t._h);t._h=setTimeout(()=>{t.style.display='none'},6000)}
@@ -82,15 +89,30 @@ async function saveAudio(blob,mime){
   if(P&&P.Filesystem){
     try{
       const b64=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result).split(',')[1]);r.onerror=rej;r.readAsDataURL(blob)});
-      const c=await P.Filesystem.writeFile({path:name,data:b64,directory:'CACHE'});
-      try{await P.Filesystem.writeFile({path:'MoyiPrava/'+name,data:b64,directory:'DOCUMENTS',recursive:true});toast('Запис збережено: Документи/MoyiPrava/'+name);return}catch(e){}
-      if(P.Share){await P.Share.share({title:'Запис',url:c.uri});return}
-      toast('Запис збережено в тимчасову папку застосунку.');return
-    }catch(e){}
+      await P.Filesystem.writeFile({path:'records/'+name,data:b64,directory:'DATA',recursive:true});
+      toast('Запис збережено. Він у розділі «Мої записи».');
+    }catch(e){toast('Не вдалося зберегти запис.')}
+    return
   }
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000);toast('Запис збережено в завантаження.')
 }
-
+async function records(){
+  const P=window.Capacitor&&Capacitor.Plugins;let list=[];
+  try{if(P&&P.Filesystem)list=(await P.Filesystem.readdir({path:'records',directory:'DATA'})).files||[]}catch(e){}
+  list.sort((x,y)=>String(y.name).localeCompare(String(x.name)));
+  A.innerHTML='<button class="b back" data-back>← Назад</button><h1>Мої записи</h1>'+(list.length?'<ol>'+list.map(f=>'<li><span>'+f.name+'<div class="row"><button class="b" data-play="'+f.name+'">▶ Слухати</button><button class="b" data-share="'+f.name+'">Поділитися</button><button class="b" data-del="'+f.name+'">Видалити</button></div><div class="pl"></div></span></li>').join('')+'</ol>':'<p class="mu">Записів поки немає.</p>')
+}
+A.addEventListener('click',async e=>{
+  const t=e.target.closest('[data-records],[data-play],[data-share],[data-del]');if(!t)return;
+  const P=window.Capacitor&&Capacitor.Plugins;if(!P||!P.Filesystem)return;
+  if(t.dataset.records!==undefined){records();return}
+  const n=t.dataset.play||t.dataset.share||t.dataset.del,path='records/'+n;
+  try{
+    if(t.dataset.play){const r=await P.Filesystem.readFile({path:path,directory:'DATA'});const mt=/m4a$/.test(n)?'audio/mp4':'audio/webm';const box=t.closest('li').querySelector('.pl');box.innerHTML='<audio controls autoplay style="width:100%;margin-top:8px"></audio>';box.firstChild.src='data:'+mt+';base64,'+r.data}
+    else if(t.dataset.share){await P.Filesystem.copy({from:path,directory:'DATA',to:n,toDirectory:'CACHE'});const u=await P.Filesystem.getUri({path:n,directory:'CACHE'});await P.Share.share({title:'Запис',url:u.uri})}
+    else if(t.dataset.del){await P.Filesystem.deleteFile({path:path,directory:'DATA'});records()}
+  }catch(err){toast('Не вдалося виконати дію із записом.')}
+});
 function ask(){const q=document.getElementById('q').value.trim(),o=document.getElementById('ans');if(!q)return;if(!window.API_URL){o.textContent='ШІ-довідник ще не підключено. Скористайтеся сценаріями.';return}o.textContent='Шукаю в базі…';fetch(window.API_URL+'/api/ask',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question:q})}).then(r=>r.json()).then(j=>{o.textContent=j.answer||j.error||'Помилка'}).catch(()=>{o.textContent='Немає зв’язку. Скористайтеся сценаріями.'})}
 A.addEventListener('click',e=>{if(e.target.closest('[data-ask]'))ask()});
 if('serviceWorker' in navigator&&/^https?:/.test(location.protocol)&&!window.Capacitor)navigator.serviceWorker.register('sw.js').catch(()=>{});
