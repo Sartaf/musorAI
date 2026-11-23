@@ -42,24 +42,38 @@ def docx_to_text(path):
     return html.unescape(xml)
 
 
+def read_one(p):
+    ext = p.rsplit(".", 1)[-1].lower()
+    if ext == "docx":
+        return docx_to_text(p)
+    raw = open(p, "rb").read()
+    t = None
+    for enc in ("utf-8-sig", "cp1251"):
+        try:
+            t = raw.decode(enc)
+            break
+        except UnicodeDecodeError:
+            pass
+    if t is None:
+        t = raw.decode("utf-8", errors="replace")
+    return html_to_text(t) if ext in ("html", "htm") else t
+
+
 def read_local(slug):
-    for ext in ("txt", "md", "html", "htm", "docx"):
-        p = os.path.join(SRC, "%s.%s" % (slug, ext))
-        if not os.path.exists(p):
-            continue
-        if ext == "docx":
-            return docx_to_text(p), p
-        raw = open(p, "rb").read()
-        for enc in ("utf-8-sig", "cp1251"):
-            try:
-                t = raw.decode(enc)
-                break
-            except UnicodeDecodeError:
-                t = None
-        if t is None:
-            t = raw.decode("utf-8", errors="replace")
-        return (html_to_text(t) if ext in ("html", "htm") else t), p
-    return None, None
+    """Читає sources/<slug>.<ext> та частини <slug>2.<ext>, <slug>3.<ext> (довгі закони Рада ділить на сторінки)."""
+    if not os.path.isdir(SRC):
+        return None, None
+    rx = re.compile(r"^%s(\d*)\.(txt|md|html|htm|docx)$" % re.escape(slug), re.I)
+    found = []
+    for name in os.listdir(SRC):
+        m = rx.match(name)
+        if m:
+            found.append((int(m.group(1) or 1), name))
+    if not found:
+        return None, None
+    found.sort()
+    text = "\n".join(read_one(os.path.join(SRC, n)) for _, n in found)
+    return text, ", ".join(n for _, n in found)
 
 
 def http_get(url, timeout=25, tries=1):

@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="uk"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script>try{var t=localStorage.getItem('theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t;if(localStorage.getItem('fs')==='l')document.documentElement.style.setProperty('--fs','1.2')}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-180.png">
 <meta name="theme-color" content="#0f172a">
@@ -11,19 +12,21 @@
 <title>Мої права</title>
 <style>
 :root{--bg:#0F1B2D;--card:#17283F;--line:#2C3C57;--tx:#F4F6FA;--mu:#A9B4C6;--ac:#F5B301;--on:#1A1203;color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-@media(prefers-color-scheme:light){:root{--bg:#F6F8FB;--card:#FFFFFF;--line:#D3DAE6;--tx:#101A2B;--mu:#4A5870;--ac:#8A5E00;--on:#FFFFFF;color-scheme:light}}
+@media(prefers-color-scheme:light){:root:not([data-theme]){--bg:#F6F8FB;--card:#FFFFFF;--line:#D3DAE6;--tx:#101A2B;--mu:#4A5870;--ac:#8A5E00;--on:#FFFFFF;color-scheme:light}}
+:root[data-theme="light"]{--bg:#F6F8FB;--card:#FFFFFF;--line:#D3DAE6;--tx:#101A2B;--mu:#4A5870;--ac:#8A5E00;--on:#FFFFFF;color-scheme:light}
+:root[data-theme="dark"]{--bg:#0F1B2D;--card:#17283F;--line:#2C3C57;--tx:#F4F6FA;--mu:#A9B4C6;--ac:#F5B301;--on:#1A1203;color-scheme:dark}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
-body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.4 system-ui,-apple-system,'Segoe UI',Roboto,sans-serif}
+body{margin:0;background:var(--bg);color:var(--tx);font:calc(16px*var(--fs,1))/1.4 system-ui,-apple-system,'Segoe UI',Roboto,sans-serif}
 #app{max-width:480px;margin:0 auto;padding:20px 16px 28px}
 h1{margin:0;font-size:28px;line-height:1.15}.mu{color:var(--mu);margin:6px 0 16px}
 .g{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 button,.b{font:inherit;cursor:pointer}
 .c{min-height:120px;border-radius:16px;border:1px solid var(--line);background:var(--card);color:var(--tx);padding:14px;text-align:left;display:flex;flex-direction:column;justify-content:space-between}
-.c b{font-size:17px}.c span{font-size:13px;color:var(--mu)}
+.c b{font-size:calc(17px*var(--fs,1))}.c span{font-size:13px;color:var(--mu)}
 ol{list-style:none;margin:16px 0;padding:0;display:flex;flex-direction:column;gap:12px}
 li{display:flex;gap:12px}li i{flex:none;width:26px;height:26px;border-radius:13px;background:var(--ac);color:var(--on);font:700 14px/26px system-ui;text-align:center}
 .box{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 16px;margin:16px 0}
-.box small{color:var(--mu)}.box p{font-size:18px;margin:6px 0 12px}
+.box small{color:var(--mu)}.box p{font-size:calc(18px*var(--fs,1));margin:6px 0 12px}
 .b{display:flex;align-items:center;justify-content:center;box-sizing:border-box;min-height:48px;border-radius:12px;border:1px solid var(--ac);background:transparent;color:var(--ac);font-weight:600;padding:0 14px;text-decoration:none}
 .p{background:var(--ac);color:var(--on);border:0;font-weight:700}
 .row{display:flex;gap:10px;margin-top:10px}.row>*{flex:1}
@@ -33,6 +36,10 @@ li{display:flex;gap:12px}li i{flex:none;width:26px;height:26px;border-radius:13p
 @media(min-width:1000px){.g{grid-template-columns:repeat(4,1fr)}}
 @media(orientation:landscape) and (max-height:520px){#app{padding:10px 16px 16px}h1{font-size:22px}.mu{margin:2px 0 8px}.c{min-height:84px;padding:10px}ol{gap:8px;margin:10px 0}.box{margin:10px 0;padding:10px 14px}textarea{min-height:56px}}
 audio{display:block}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.gear{flex:none;width:44px;height:44px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--tx);font-size:22px;line-height:1}
+.seg{display:flex;gap:8px;margin-top:8px}.seg .b{flex:1}.seg .b.on{background:var(--ac);color:var(--on);border-color:var(--ac)}
+.fld{width:100%;box-sizing:border-box;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--tx);padding:12px 14px;font:inherit;margin-top:8px}
 .split{display:flex;min-width:0}.split .b{flex:1;padding:0 8px}.split .b:first-child{border-radius:12px 0 0 12px}.split .b:last-child{border-radius:0 12px 12px 0;border-left:0}
 .chip{display:inline-block;font-size:12px;padding:6px 10px;border-radius:999px;background:var(--card);margin:0 6px 6px 0;border:1px solid var(--line)}
 textarea{width:100%;box-sizing:border-box;min-height:84px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--tx);padding:12px 14px;font:inherit;resize:vertical;margin-bottom:10px}
@@ -44,16 +51,38 @@ label small{display:block;color:var(--mu);margin:16px 0 6px}
 </style></head><body><div id="app"></div>
 <script src="config.js"></script>
 <script>
-const BUILD='2026-11-22a';
+const BUILD='2026-11-23a';
+const DEFMSG='Мені потрібна допомога. Зі мною зупинилася поліція або ТЦК.';
+const LS={get:(k,d)=>{try{return localStorage.getItem(k)||d}catch(e){return d}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}}};
+function applyTheme(){const r=document.documentElement,t=LS.get('theme','auto');if(t==='auto')delete r.dataset.theme;else r.dataset.theme=t;r.style.setProperty('--fs',LS.get('fs','n')==='l'?'1.2':'1');const m=document.querySelector('meta[name=theme-color]');if(m)m.content=getComputedStyle(r).getPropertyValue('--bg').trim()||'#0F1B2D'}
 let D=[],rec=null,t0=0;
 const native=()=>!!(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform());
 const recBtn=()=>native()?'<button class="b" style="width:100%;margin-top:10px" data-records>Мої записи</button>':'';
 const A=document.getElementById('app'),L=()=>{try{return localStorage.getItem('sos')||''}catch(e){return ''}};
 const sos=()=>`<label><small>Номер SOS-контакту</small><input type="tel" id="tel" value="${L()}" placeholder="+380…"></label><div class="row"><button class="b p" data-sos>Надіслати SOS</button><div class="split"><label class="b">Відео<input type="file" accept="video/*" capture hidden></label><button class="b${rec?' rec':''}" data-rec>${rec?'■ Стоп':'Диктофон'}</button></div></div>`;
-function home(){A.innerHTML=`<h1>Мої права</h1><p class="mu">Що сталося? Оберіть ситуацію</p><div class="cols"><div><div class="g">${D.map(d=>`<button class="c" data-k="${d.id}"><b>${d.title}</b><span>${d.subtitle}</span></button>`).join('')}</div></div><aside><div class="box" style="margin-top:0"><small>Не знайшли ситуацію? Запитайте ШІ-довідник</small><textarea id="q" placeholder="Опишіть ситуацію своїми словами"></textarea><button class="b p" style="width:100%" data-ask>Запитати</button><div id="ans"></div></div>${sos()}${recBtn()}</aside></div><p class="n">Довідкова інформація, а не юридична консультація. Тексти потребують перевірки юристом. Збірка ${BUILD}</p>`}
+function home(){A.innerHTML=`<div class="top"><h1>Мої права</h1><button class="gear" data-settings aria-label="Налаштування">⚙</button></div><p class="mu">Що сталося? Оберіть ситуацію</p><div class="cols"><div><div class="g">${D.map(d=>`<button class="c" data-k="${d.id}"><b>${d.title}</b><span>${d.subtitle}</span></button>`).join('')}</div></div><aside><div class="box" style="margin-top:0"><small>Не знайшли ситуацію? Запитайте ШІ-довідник</small><textarea id="q" placeholder="Опишіть ситуацію своїми словами"></textarea><button class="b p" style="width:100%" data-ask>Запитати</button><div id="ans"></div></div>${sos()}${recBtn()}</aside></div><p class="n">Довідкова інформація, а не юридична консультація. Тексти потребують перевірки юристом. Збірка ${BUILD}</p>`}
 function show(k){const d=D.find(x=>x.id===k);A.innerHTML=`<button class="b back" data-back>← Назад</button><h1>${d.title}</h1><div class="cols"><div><ol>${d.steps.map((x,i)=>`<li><i>${i+1}</i><span>${x.text}<small class="nm">Підстава: ${x.ref} · ${x.found?'знайдено в джерелах':'потребує перевірки'}</small></span></li>`).join('')}</ol></div><aside><div class="box"><small>Скажіть вголос</small><p>«${d.phrase}»</p><button class="b" style="width:100%" data-say="${k}">Озвучити фразу</button></div><div><span class="chip">Потрібна перевірка юриста</span></div>${sos()}</aside></div>`}
-A.onclick=e=>{const k=e.target.closest('[data-k]');if(k)return show(k.dataset.k);if(e.target.closest('[data-back]'))return home();const s=e.target.closest('[data-say]');if(s){say(D.find(x=>x.id===s.dataset.say).phrase)}if(e.target.closest('[data-rec]'))toggleRec();if(e.target.closest('[data-sos]')){const n=document.getElementById('tel').value.trim();if(n)location.href='sms:'+n+'?body='+encodeURIComponent('Мені потрібна допомога. Зі мною зупинилася поліція або ТЦК.')}};
-A.onchange=e=>{if(e.target.id==='tel'){try{localStorage.setItem('sos',e.target.value)}catch(x){}}};
+A.onclick=e=>{const k=e.target.closest('[data-k]');if(k)return go('show',k.dataset.k);if(e.target.closest('[data-back]'))return back();if(e.target.closest('[data-settings]'))return go('settings');const s=e.target.closest('[data-say]');if(s){say(D.find(x=>x.id===s.dataset.say).phrase)}if(e.target.closest('[data-rec]'))toggleRec();if(e.target.closest('[data-sos]')){const n=document.getElementById('tel').value.trim();if(n)location.href='sms:'+n+'?body='+encodeURIComponent(LS.get('sosmsg',DEFMSG))}};
+A.onchange=e=>{if(e.target.id==='tel'||e.target.id==='tel2')LS.set('sos',e.target.value);if(e.target.id==='sosmsg')LS.set('sosmsg',e.target.value.trim()||DEFMSG)};
+function render(st){window.scrollTo(0,0);st=st||{s:'home'};if(st.s==='show')show(st.a);else if(st.s==='settings')settings();else if(st.s==='records')records();else home()}
+function go(s,a){history.pushState({s:s,a:a||null},'');render({s:s,a:a})}
+function back(){if(history.state&&history.state.s&&history.state.s!=='home')history.back();else{history.replaceState({s:'home'},'');render({s:'home'})}}
+window.addEventListener('popstate',e=>render(e.state));
+function settings(){
+  const th=LS.get('theme','auto'),fs=LS.get('fs','n');
+  const seg=(name,cur,opts)=>'<div class="seg">'+opts.map(o=>'<button class="b'+(cur===o[0]?' on':'')+'" data-set="'+name+'" data-v="'+o[0]+'">'+o[1]+'</button>').join('')+'</div>';
+  A.innerHTML='<button class="b back" data-back>← Назад</button><h1>Налаштування</h1>'
+   +'<div class="box"><small>Тема</small>'+seg('theme',th,[['auto','Авто'],['light','Світла'],['dark','Темна']])+'</div>'
+   +'<div class="box"><small>Розмір тексту</small>'+seg('fs',fs,[['n','Звичайний'],['l','Великий']])+'</div>'
+   +'<div class="box"><small>Контакт для SOS</small><input class="fld" id="tel2" type="tel" placeholder="+380…"><small style="display:block;margin-top:12px">Текст повідомлення SOS</small><textarea class="fld" id="sosmsg" rows="3"></textarea></div>'
+   +'<div class="box"><small>ШІ-довідник</small><p style="font-size:16px">'+(window.API_URL?'Підключено':'Ще не підключено')+'</p></div>'
+   +(native()?'<button class="b" style="width:100%" data-records>Мої записи</button>':'')
+   +'<div class="box"><small>Про застосунок</small><p style="font-size:15px">Збірка '+BUILD+'. Довідкова інформація, не юридична консультація. Норми взято з офіційних текстів на zakon.rada.gov.ua; перелік джерел: docs/SOURCES.md у репозиторії Sartaf/musorAI.</p></div>';
+  document.getElementById('tel2').value=LS.get('sos','');
+  document.getElementById('sosmsg').value=LS.get('sosmsg',DEFMSG);
+}
+A.addEventListener('click',e=>{const t=e.target.closest('[data-set]');if(!t)return;const y=window.scrollY;LS.set(t.dataset.set,t.dataset.v);applyTheme();settings();window.scrollTo(0,y)});
+
 function toast(m){let t=document.getElementById('toast');if(!t){t=document.createElement('div');t.id='toast';document.body.appendChild(t)}t.textContent=m;t.style.display='block';clearTimeout(t._h);t._h=setTimeout(()=>{t.style.display='none'},6000)}
 async function say(text){
   const P=window.Capacitor&&Capacitor.Plugins,T=P&&P.TextToSpeech;
@@ -105,7 +134,7 @@ async function records(){
 A.addEventListener('click',async e=>{
   const t=e.target.closest('[data-records],[data-play],[data-share],[data-del]');if(!t)return;
   const P=window.Capacitor&&Capacitor.Plugins;if(!P||!P.Filesystem)return;
-  if(t.dataset.records!==undefined){records();return}
+  if(t.dataset.records!==undefined){go('records');return}
   const n=t.dataset.play||t.dataset.share||t.dataset.del,path='records/'+n;
   try{
     if(t.dataset.play){const r=await P.Filesystem.readFile({path:path,directory:'DATA'});const mt=/m4a$/.test(n)?'audio/mp4':'audio/webm';const box=t.closest('li').querySelector('.pl');box.innerHTML='<audio controls autoplay style="width:100%;margin-top:8px"></audio>';box.firstChild.src='data:'+mt+';base64,'+r.data}
@@ -116,5 +145,5 @@ A.addEventListener('click',async e=>{
 function ask(){const q=document.getElementById('q').value.trim(),o=document.getElementById('ans');if(!q)return;if(!window.API_URL){o.textContent='ШІ-довідник ще не підключено. Скористайтеся сценаріями.';return}o.textContent='Шукаю в базі…';fetch(window.API_URL+'/api/ask',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question:q})}).then(r=>r.json()).then(j=>{o.textContent=j.answer||j.error||'Помилка'}).catch(()=>{o.textContent='Немає зв’язку. Скористайтеся сценаріями.'})}
 A.addEventListener('click',e=>{if(e.target.closest('[data-ask]'))ask()});
 if('serviceWorker' in navigator&&/^https?:/.test(location.protocol)&&!window.Capacitor)navigator.serviceWorker.register('sw.js').catch(()=>{});
-fetch('scenarios.json').then(r=>r.json()).then(j=>{D=j;home()}).catch(()=>{A.innerHTML='<p class="mu">Не вдалося завантажити дані.</p>'});
+fetch('scenarios.json').then(r=>r.json()).then(j=>{D=j;history.replaceState({s:'home'},'');applyTheme();home()}).catch(()=>{A.innerHTML='<p class="mu">Не вдалося завантажити дані.</p>'});
 </script></body></html>
