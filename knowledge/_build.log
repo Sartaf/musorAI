@@ -1,4 +1,4 @@
 [!] konstytutsiia: статті не знайдено, перевірте формат файлу
-npu: 26 статей (52665 символів)
-kupap: 5 статей (6452 символів)
+[пропущено] npu: немає sources/npu.txt, а завантаження не вдалося (<urlopen error [Errno 111] Connection refused>)
+[пропущено] kupap: немає sources/kupap.txt, а завантаження не вдалося (<urlopen error _ssl.c:1063: The handshake operation timed out>)
 kpk: 38 статей (80276 символів)
