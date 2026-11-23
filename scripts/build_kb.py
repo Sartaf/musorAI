@@ -66,20 +66,31 @@ def http_get(url, timeout=25):
     return urllib.request.urlopen(req, timeout=timeout).read().decode("utf-8", errors="replace")
 
 
+def archive_get(url):
+    api = "https://archive.org/wayback/available?url=%s&timestamp=20261120" % urllib.parse.quote(url, safe="")
+    snap = json.loads(http_get(api)).get("archived_snapshots", {}).get("closest")
+    if not snap or not snap.get("available"):
+        raise RuntimeError("немає знімка в Інтернет-архіві: " + url)
+    ts = snap["timestamp"]
+    return html_to_text(http_get("https://web.archive.org/web/%sid_/%s" % (ts, url), 90)), "%s-%s-%s" % (ts[:4], ts[4:6], ts[6:8])
+
+
 def fetch_remote(code):
     """Спершу офіційний сайт, потім копія його сторінки з Інтернет-архіву (із зазначенням дати знімка)."""
     base = "https://zakon.rada.gov.ua/laws/show/%s/print" % code
     try:
-        return html_to_text(http_get(base)), "завантажено з zakon.rada.gov.ua"
+        return html_to_text(http_get(base)), "завантажено з zakon.rada.gov.ua", None
     except Exception:
         pass
-    api = "https://archive.org/wayback/available?url=%s&timestamp=20261120" % urllib.parse.quote(base, safe="")
-    snap = json.loads(http_get(api)).get("archived_snapshots", {}).get("closest")
-    if not snap or not snap.get("available"):
-        raise RuntimeError("немає знімка в Інтернет-архіві")
-    ts = snap["timestamp"]
-    text = html_to_text(http_get("https://web.archive.org/web/%sid_/%s" % (ts, base), 90))
-    return text, "копія офіційної сторінки zakon.rada.gov.ua з Інтернет-архіву, знімок від %s-%s-%s (редакція може бути не найновішою)" % (ts[:4], ts[4:6], ts[6:8])
+    text, day = archive_get(base)
+    return text, "копія офіційної сторінки zakon.rada.gov.ua з Інтернет-архіву, знімок від %s (редакція може бути не найновішою)" % day, day
+
+
+def covers(arts, c):
+    ok = all(a in arts for a in c.get("articles", []))
+    for lo, hi in c.get("ranges", []):
+        ok = ok and any(lo <= int(k.split("-")[0]) <= hi for k in arts)
+    return ok
 
 
 def normalize(t):
@@ -90,8 +101,8 @@ def normalize(t):
 def split_articles(text):
     """Повертає {номер: текст} за заголовками "Стаття N." (перше входження)."""
     out = {}
-    for part in re.split(r"\n\s*(?=Стаття\s+\d+(?:-\d+)?\.)", "\n" + text):
-        m = re.match(r"\s*Стаття\s+(\d+(?:-\d+)?)\.", part)
+    for part in re.split(r"\n\s*(?=Стаття\s+\d+(?:-\d+)?(?:\.|[ \t]*\n))", "\n" + text):
+        m = re.match(r"\s*Стаття\s+(\d+(?:-\d+)?)(?:\.|[ \t]*\n)", part)
         if m and m.group(1) not in out:
             out[m.group(1)] = re.sub(r"\n{3,}", "\n\n", part).strip()
     return out
@@ -122,7 +133,16 @@ def main():
         origin = "завантажено вручну з офіційного сайту zakon.rada.gov.ua"
         if text is None:
             try:
-                text, origin = fetch_remote(c["code"])
+                text, origin, day = fetch_remote(c["code"])
+                if day and not covers(split_articles(normalize(text)), c):
+                    for n in range(2, 10):  # довгі закони Рада ділить на сторінки
+                        try:
+                            more, _ = archive_get("https://zakon.rada.gov.ua/laws/show/%s/page%d" % (c["code"], n))
+                        except Exception:
+                            continue
+                        text += "\n" + more
+                        if covers(split_articles(normalize(text)), c):
+                            break
             except Exception as e:
                 print("[пропущено] %s: немає sources/%s.txt, а завантаження не вдалося (%s)" % (slug, slug, e))
                 continue
