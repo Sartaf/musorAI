@@ -15,6 +15,7 @@ import json
 import os
 import re
 import sys
+import time
 import urllib.parse
 import urllib.request
 import zipfile
@@ -61,18 +62,25 @@ def read_local(slug):
     return None, None
 
 
-def http_get(url, timeout=25):
-    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (musorAI kb builder)"})
-    return urllib.request.urlopen(req, timeout=timeout).read().decode("utf-8", errors="replace")
+def http_get(url, timeout=25, tries=1):
+    last = None
+    for i in range(tries):
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (musorAI kb builder)"})
+            return urllib.request.urlopen(req, timeout=timeout).read().decode("utf-8", errors="replace")
+        except Exception as e:
+            last = e
+            time.sleep(8 * (i + 1))
+    raise last
 
 
 def archive_get(url):
     api = "https://archive.org/wayback/available?url=%s&timestamp=20261120" % urllib.parse.quote(url, safe="")
-    snap = json.loads(http_get(api)).get("archived_snapshots", {}).get("closest")
+    snap = json.loads(http_get(api, 30, 3)).get("archived_snapshots", {}).get("closest")
     if not snap or not snap.get("available"):
         raise RuntimeError("немає знімка в Інтернет-архіві: " + url)
     ts = snap["timestamp"]
-    return html_to_text(http_get("https://web.archive.org/web/%sid_/%s" % (ts, url), 90)), "%s-%s-%s" % (ts[:4], ts[4:6], ts[6:8])
+    return html_to_text(http_get("https://web.archive.org/web/%sid_/%s" % (ts, url), 120, 3)), "%s-%s-%s" % (ts[:4], ts[4:6], ts[6:8])
 
 
 def fetch_remote(code):
