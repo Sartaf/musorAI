@@ -18,7 +18,7 @@ jobs:
         with:
           ref: main
       - name: Build
-        run: python3 scripts/build_kb.py
+        run: python3 scripts/build_kb.py 2>&1 | tee knowledge/_build.log
       - name: Commit knowledge/
         run: |
           git config user.name "github-actions"

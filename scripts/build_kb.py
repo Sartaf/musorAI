@@ -15,6 +15,7 @@ import json
 import os
 import re
 import sys
+import urllib.parse
 import urllib.request
 import zipfile
 
@@ -60,10 +61,25 @@ def read_local(slug):
     return None, None
 
 
-def fetch_remote(code):
-    url = "https://zakon.rada.gov.ua/laws/show/%s/print" % code
+def http_get(url, timeout=25):
     req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (musorAI kb builder)"})
-    return html_to_text(urllib.request.urlopen(req, timeout=20).read().decode("utf-8", errors="replace"))
+    return urllib.request.urlopen(req, timeout=timeout).read().decode("utf-8", errors="replace")
+
+
+def fetch_remote(code):
+    """Спершу офіційний сайт, потім копія його сторінки з Інтернет-архіву (із зазначенням дати знімка)."""
+    base = "https://zakon.rada.gov.ua/laws/show/%s/print" % code
+    try:
+        return html_to_text(http_get(base)), "завантажено з zakon.rada.gov.ua"
+    except Exception:
+        pass
+    api = "https://archive.org/wayback/available?url=%s&timestamp=20261120" % urllib.parse.quote(base, safe="")
+    snap = json.loads(http_get(api)).get("archived_snapshots", {}).get("closest")
+    if not snap or not snap.get("available"):
+        raise RuntimeError("немає знімка в Інтернет-архіві")
+    ts = snap["timestamp"]
+    text = html_to_text(http_get("https://web.archive.org/web/%sid_/%s" % (ts, base), 90))
+    return text, "копія офіційної сторінки zakon.rada.gov.ua з Інтернет-архіву, знімок від %s-%s-%s (редакція може бути не найновішою)" % (ts[:4], ts[4:6], ts[6:8])
 
 
 def normalize(t):
@@ -106,7 +122,7 @@ def main():
         origin = "завантажено вручну з офіційного сайту zakon.rada.gov.ua"
         if text is None:
             try:
-                text, origin = fetch_remote(c["code"]), "завантажено з zakon.rada.gov.ua"
+                text, origin = fetch_remote(c["code"])
             except Exception as e:
                 print("[пропущено] %s: немає sources/%s.txt, а завантаження не вдалося (%s)" % (slug, slug, e))
                 continue
