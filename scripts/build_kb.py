@@ -116,6 +116,11 @@ def split_articles(text):
     return out
 
 
+def find_point(text, n, start=0):
+    m = re.compile(r"(?m)^%d\.\s" % n).search(text, start)
+    return m.start() if m else None
+
+
 def wanted(keys, cfg):
     exact = set(cfg.get("articles", []))
     ranges = cfg.get("ranges", [])
@@ -136,7 +141,10 @@ def main():
     with open(os.path.join(HERE, "kb_articles.json"), encoding="utf-8") as f:
         cfg = json.load(f)
     os.makedirs(OUT, exist_ok=True)
+    only = [x for x in os.environ.get("KB_ONLY", "").split(",") if x]
     for slug, c in cfg.items():
+        if only and slug not in only:
+            continue
         text, path = read_local(slug)
         origin = "завантажено вручну з офіційного сайту zakon.rada.gov.ua"
         if text is None:
@@ -154,6 +162,24 @@ def main():
             except Exception as e:
                 print("[пропущено] %s: немає sources/%s.txt, а завантаження не вдалося (%s)" % (slug, slug, e))
                 continue
+        if "points" in c:  # нормативні акти з нумерованими пунктами (не статтями)
+            text = normalize(text)
+            parts, missing = [], []
+            for lo, hi in c["points"]:
+                a = find_point(text, lo)
+                e = find_point(text, hi + 1, a + 1) if a is not None else None
+                if a is None or e is None:
+                    missing.append("%d-%d" % (lo, hi))
+                    continue
+                parts.append(text[a:e].strip())
+            if not parts:
+                print("[!] %s: пункти не знайдено" % slug)
+                continue
+            head = "# %s (витяг: пункти %s)\n\nДжерело: %s. Офіційна сторінка: https://zakon.rada.gov.ua/laws/show/%s\nПункти подано без змін, як у вихідному тексті.\n\n" % (c["title"], ", ".join("%d-%d" % tuple(r) for r in c["points"]), origin, c["code"])
+            with open(os.path.join(OUT, slug + ".md"), "w", encoding="utf-8") as f:
+                f.write(head + "\n\n".join(parts) + "\n")
+            print("%s: %d фрагментів (%d символів)%s" % (slug, len(parts), sum(len(x) for x in parts), "; не знайдено: " + ", ".join(missing) if missing else ""))
+            continue
         arts = split_articles(normalize(text))
         keys = sorted(wanted(arts.keys(), c), key=sort_key)
         listed = set(c.get("articles", []))
