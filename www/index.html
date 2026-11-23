@@ -51,7 +51,7 @@ label small{display:block;color:var(--mu);margin:16px 0 6px}
 </style></head><body><div id="app"></div>
 <script src="config.js"></script>
 <script>
-const BUILD='2026-11-23a';
+const BUILD='2026-11-23b';
 const DEFMSG='Мені потрібна допомога. Зі мною зупинилася поліція або ТЦК.';
 const LS={get:(k,d)=>{try{return localStorage.getItem(k)||d}catch(e){return d}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}}};
 function applyTheme(){const r=document.documentElement,t=LS.get('theme','auto');if(t==='auto')delete r.dataset.theme;else r.dataset.theme=t;r.style.setProperty('--fs',LS.get('fs','n')==='l'?'1.2':'1');const m=document.querySelector('meta[name=theme-color]');if(m)m.content=getComputedStyle(r).getPropertyValue('--bg').trim()||'#0F1B2D'}
@@ -60,10 +60,10 @@ const native=()=>!!(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNa
 const recBtn=()=>native()?'<button class="b" style="width:100%;margin-top:10px" data-records>Мої записи</button>':'';
 const A=document.getElementById('app'),L=()=>{try{return localStorage.getItem('sos')||''}catch(e){return ''}};
 const sos=()=>`<label><small>Номер SOS-контакту</small><input type="tel" id="tel" value="${L()}" placeholder="+380…"></label><div class="row"><button class="b p" data-sos>Надіслати SOS</button><div class="split"><label class="b">Відео<input type="file" accept="video/*" capture hidden></label><button class="b${rec?' rec':''}" data-rec>${rec?'■ Стоп':'Диктофон'}</button></div></div>`;
-function home(){A.innerHTML=`<div class="top"><h1>Мої права</h1><button class="gear" data-settings aria-label="Налаштування">⚙</button></div><p class="mu">Що сталося? Оберіть ситуацію</p><div class="cols"><div><div class="g">${D.map(d=>`<button class="c" data-k="${d.id}"><b>${d.title}</b><span>${d.subtitle}</span></button>`).join('')}</div></div><aside><div class="box" style="margin-top:0"><small>Не знайшли ситуацію? Запитайте ШІ-довідник</small><textarea id="q" placeholder="Опишіть ситуацію своїми словами"></textarea><button class="b p" style="width:100%" data-ask>Запитати</button><div id="ans"></div></div>${sos()}${recBtn()}</aside></div><p class="n">Довідкова інформація, а не юридична консультація. Тексти потребують перевірки юристом. Збірка ${BUILD}</p>`}
+function home(){A.innerHTML=`<div class="top"><h1>Мої права</h1><button class="gear" data-settings aria-label="Профіль і налаштування">👤</button></div><p class="mu">Що сталося? Оберіть ситуацію</p><div class="cols"><div><div class="g">${D.map(d=>`<button class="c" data-k="${d.id}"><b>${d.title}</b><span>${d.subtitle}</span></button>`).join('')}</div></div><aside><div class="box" style="margin-top:0"><small>Не знайшли ситуацію? Запитайте ШІ-довідник</small><textarea id="q" placeholder="Опишіть ситуацію своїми словами"></textarea><button class="b p" style="width:100%" data-ask>Запитати</button><div id="ans"></div></div>${sos()}${recBtn()}</aside></div><p class="n">Довідкова інформація, а не юридична консультація. Тексти потребують перевірки юристом. Збірка ${BUILD}</p>`}
 function show(k){const d=D.find(x=>x.id===k);A.innerHTML=`<button class="b back" data-back>← Назад</button><h1>${d.title}</h1><div class="cols"><div><ol>${d.steps.map((x,i)=>`<li><i>${i+1}</i><span>${x.text}<small class="nm">Підстава: ${x.ref} · ${x.found?'знайдено в джерелах':'потребує перевірки'}</small></span></li>`).join('')}</ol></div><aside><div class="box"><small>Скажіть вголос</small><p>«${d.phrase}»</p><button class="b" style="width:100%" data-say="${k}">Озвучити фразу</button></div><div><span class="chip">Потрібна перевірка юриста</span></div>${sos()}</aside></div>`}
-A.onclick=e=>{const k=e.target.closest('[data-k]');if(k)return go('show',k.dataset.k);if(e.target.closest('[data-back]'))return back();if(e.target.closest('[data-settings]'))return go('settings');const s=e.target.closest('[data-say]');if(s){say(D.find(x=>x.id===s.dataset.say).phrase)}if(e.target.closest('[data-rec]'))toggleRec();if(e.target.closest('[data-sos]')){const n=document.getElementById('tel').value.trim();if(n)location.href='sms:'+n+'?body='+encodeURIComponent(LS.get('sosmsg',DEFMSG))}};
-A.onchange=e=>{if(e.target.id==='tel'||e.target.id==='tel2')LS.set('sos',e.target.value);if(e.target.id==='sosmsg')LS.set('sosmsg',e.target.value.trim()||DEFMSG)};
+A.onclick=e=>{const k=e.target.closest('[data-k]');if(k)return go('show',k.dataset.k);if(e.target.closest('[data-back]'))return back();if(e.target.closest('[data-settings]'))return go('settings');const s=e.target.closest('[data-say]');if(s){say(D.find(x=>x.id===s.dataset.say).phrase)}if(e.target.closest('[data-rec]'))toggleRec();if(e.target.closest('[data-sos]')){const n=document.getElementById('tel').value.trim();if(n)location.href='sms:'+n+'?body='+encodeURIComponent(LS.get('sosmsg',DEFMSG)+(LS.get('name','')?' Мене звати '+LS.get('name','')+'.':''))}};
+A.onchange=e=>{if(e.target.id==='tel'||e.target.id==='tel2')LS.set('sos',e.target.value);if(e.target.id==='sosmsg')LS.set('sosmsg',e.target.value.trim()||DEFMSG);if(e.target.id==='pname')LS.set('name',e.target.value.trim())};
 function render(st){window.scrollTo(0,0);st=st||{s:'home'};if(st.s==='show')show(st.a);else if(st.s==='settings')settings();else if(st.s==='records')records();else home()}
 function go(s,a){history.pushState({s:s,a:a||null},'');render({s:s,a:a})}
 function back(){if(history.state&&history.state.s&&history.state.s!=='home')history.back();else{history.replaceState({s:'home'},'');render({s:'home'})}}
@@ -71,7 +71,9 @@ window.addEventListener('popstate',e=>render(e.state));
 function settings(){
   const th=LS.get('theme','auto'),fs=LS.get('fs','n');
   const seg=(name,cur,opts)=>'<div class="seg">'+opts.map(o=>'<button class="b'+(cur===o[0]?' on':'')+'" data-set="'+name+'" data-v="'+o[0]+'">'+o[1]+'</button>').join('')+'</div>';
-  A.innerHTML='<button class="b back" data-back>← Назад</button><h1>Налаштування</h1>'
+  A.innerHTML='<button class="b back" data-back>← Назад</button><h1>Профіль</h1>'
+   +'<div class="box"><small>Ім’я (необов’язково)</small><input class="fld" id="pname" type="text" placeholder="Як вас звати" autocomplete="name"><small style="display:block;margin-top:12px">Акаунт</small><p style="font-size:15px;margin:6px 0 10px">Зараз ви користуєтесь застосунком без входу. Усі підказки працюють без реєстрації. Вхід потрібен лише для синхронізації між пристроями.</p><div class="seg"><button class="b" disabled style="opacity:.5">E-mail</button><button class="b" disabled style="opacity:.5">Google</button><button class="b" disabled style="opacity:.5">Apple</button></div><small style="display:block;margin-top:8px">Вхід буде доступний пізніше.</small></div>'
+   +'<h2 style="margin:20px 0 0;font-size:20px">Налаштування</h2>'
    +'<div class="box"><small>Тема</small>'+seg('theme',th,[['auto','Авто'],['light','Світла'],['dark','Темна']])+'</div>'
    +'<div class="box"><small>Розмір тексту</small>'+seg('fs',fs,[['n','Звичайний'],['l','Великий']])+'</div>'
    +'<div class="box"><small>Контакт для SOS</small><input class="fld" id="tel2" type="tel" placeholder="+380…"><small style="display:block;margin-top:12px">Текст повідомлення SOS</small><textarea class="fld" id="sosmsg" rows="3"></textarea></div>'
@@ -79,6 +81,7 @@ function settings(){
    +(native()?'<button class="b" style="width:100%" data-records>Мої записи</button>':'')
    +'<div class="box"><small>Про застосунок</small><p style="font-size:15px">Збірка '+BUILD+'. Довідкова інформація, не юридична консультація. Норми взято з офіційних текстів на zakon.rada.gov.ua; перелік джерел: docs/SOURCES.md у репозиторії Sartaf/musorAI.</p></div>';
   document.getElementById('tel2').value=LS.get('sos','');
+  document.getElementById('pname').value=LS.get('name','');
   document.getElementById('sosmsg').value=LS.get('sosmsg',DEFMSG);
 }
 A.addEventListener('click',e=>{const t=e.target.closest('[data-set]');if(!t)return;const y=window.scrollY;LS.set(t.dataset.set,t.dataset.v);applyTheme();settings();window.scrollTo(0,y)});
