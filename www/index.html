@@ -50,8 +50,9 @@ label small{display:block;color:var(--mu);margin:16px 0 6px}
 .n{font-size:12px;color:var(--mu);margin-top:18px}.back{margin-bottom:12px;width:auto}
 </style></head><body><div id="app"></div>
 <script src="config.js"></script>
+<script src="firebase-config.js"></script>
 <script>
-const BUILD='2026-11-23b';
+const BUILD='2026-11-26a';
 const DEFMSG='Мені потрібна допомога. Зі мною зупинилася поліція або ТЦК.';
 const LS={get:(k,d)=>{try{return localStorage.getItem(k)||d}catch(e){return d}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}}};
 function applyTheme(){const r=document.documentElement,t=LS.get('theme','auto');if(t==='auto')delete r.dataset.theme;else r.dataset.theme=t;r.style.setProperty('--fs',LS.get('fs','n')==='l'?'1.2':'1');const m=document.querySelector('meta[name=theme-color]');if(m)m.content=getComputedStyle(r).getPropertyValue('--bg').trim()||'#0F1B2D'}
@@ -72,7 +73,7 @@ function settings(){
   const th=LS.get('theme','auto'),fs=LS.get('fs','n');
   const seg=(name,cur,opts)=>'<div class="seg">'+opts.map(o=>'<button class="b'+(cur===o[0]?' on':'')+'" data-set="'+name+'" data-v="'+o[0]+'">'+o[1]+'</button>').join('')+'</div>';
   A.innerHTML='<button class="b back" data-back>← Назад</button><h1>Профіль</h1>'
-   +'<div class="box"><small>Ім’я (необов’язково)</small><input class="fld" id="pname" type="text" placeholder="Як вас звати" autocomplete="name"><small style="display:block;margin-top:12px">Акаунт</small><p style="font-size:15px;margin:6px 0 10px">Зараз ви користуєтесь застосунком без входу. Усі підказки працюють без реєстрації. Вхід потрібен лише для синхронізації між пристроями.</p><div class="seg"><button class="b" disabled style="opacity:.5">E-mail</button><button class="b" disabled style="opacity:.5">Google</button><button class="b" disabled style="opacity:.5">Apple</button></div><small style="display:block;margin-top:8px">Вхід буде доступний пізніше.</small></div>'
+   +'<div class="box"><small>Ім’я (необов’язково)</small><input class="fld" id="pname" type="text" placeholder="Як вас звати" autocomplete="name"><small style="display:block;margin-top:12px">Акаунт</small>'+accountBlock()+'</div>'
    +'<h2 style="margin:20px 0 0;font-size:20px">Налаштування</h2>'
    +'<div class="box"><small>Тема</small>'+seg('theme',th,[['auto','Авто'],['light','Світла'],['dark','Темна']])+'</div>'
    +'<div class="box"><small>Розмір тексту</small>'+seg('fs',fs,[['n','Звичайний'],['l','Великий']])+'</div>'
@@ -85,6 +86,42 @@ function settings(){
   document.getElementById('sosmsg').value=LS.get('sosmsg',DEFMSG);
 }
 A.addEventListener('click',e=>{const t=e.target.closest('[data-set]');if(!t)return;const y=window.scrollY;LS.set(t.dataset.set,t.dataset.v);applyTheme();settings();window.scrollTo(0,y)});
+
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let FB=null;
+async function fb(){
+  if(FB)return FB;
+  if(!window.FIREBASE_CONFIG)throw {code:'nocfg'};
+  const load=window.__fbload||(u=>import(u)),base='https://www.gstatic.com/firebasejs/10.14.1/';
+  const mods=await Promise.all([load(base+'firebase-app.js'),load(base+'firebase-auth.js')]);
+  const app=mods[0].initializeApp(window.FIREBASE_CONFIG),m=mods[1],auth=m.getAuth(app);
+  FB={auth:auth,m:m};
+  m.onAuthStateChanged(auth,u=>{window.USER=u;if(history.state&&history.state.s==='settings')settings()});
+  return FB;
+}
+function accountBlock(){
+  const u=window.USER;
+  if(!window.FIREBASE_CONFIG)return '<p style="font-size:15px;margin:6px 0 0">Вхід ще не налаштовано. Усі підказки працюють без реєстрації.</p>';
+  if(u)return '<p style="font-size:15px;margin:6px 0 10px">Ви увійшли: <b>'+esc(u.email||'')+'</b></p><button class="b" style="width:100%" data-auth="out">Вийти</button>';
+  return '<p style="font-size:15px;margin:6px 0 4px">Вхід необов’язковий. Усі підказки працюють без нього.</p><input class="fld" id="aemail" type="email" placeholder="E-mail" autocomplete="email"><input class="fld" id="apass" type="password" placeholder="Пароль (від 6 символів)" autocomplete="current-password"><div class="seg"><button class="b on" data-auth="in">Увійти</button><button class="b" data-auth="up">Створити акаунт</button></div><button class="b" style="width:100%;margin-top:8px" data-auth="reset">Забули пароль?</button><div id="amsg" class="mu" style="margin-top:8px"></div>';
+}
+function authErr(e){
+  const m={'auth/invalid-email':'Некоректний e-mail.','auth/invalid-credential':'Невірний e-mail або пароль.','auth/wrong-password':'Невірний e-mail або пароль.','auth/user-not-found':'Невірний e-mail або пароль.','auth/email-already-in-use':'Такий акаунт уже існує. Натисніть «Увійти».','auth/weak-password':'Пароль закороткий (від 6 символів).','auth/network-request-failed':'Немає зв’язку з інтернетом.','auth/too-many-requests':'Забагато спроб. Спробуйте пізніше.',nocfg:'Вхід ще не налаштовано.'};
+  return m[e&&e.code]||'Не вдалося виконати дію.';
+}
+A.addEventListener('click',async e=>{
+  const t=e.target.closest('[data-auth]');if(!t)return;
+  const msg=document.getElementById('amsg'),say=x=>{if(msg)msg.textContent=x},k=t.dataset.auth;
+  try{
+    const F=await fb();
+    if(k==='out'){await F.m.signOut(F.auth);return}
+    const em=document.getElementById('aemail').value.trim(),pw=document.getElementById('apass').value;
+    if(k==='reset'){if(!em){say('Введіть e-mail.');return}await F.m.sendPasswordResetEmail(F.auth,em);say('Лист для скидання пароля надіслано.');return}
+    if(!em||pw.length<6){say('Введіть e-mail і пароль (від 6 символів).');return}
+    say('Зачекайте…');
+    if(k==='up')await F.m.createUserWithEmailAndPassword(F.auth,em,pw);else await F.m.signInWithEmailAndPassword(F.auth,em,pw);
+  }catch(err){say(authErr(err))}
+});
 
 function toast(m){let t=document.getElementById('toast');if(!t){t=document.createElement('div');t.id='toast';document.body.appendChild(t)}t.textContent=m;t.style.display='block';clearTimeout(t._h);t._h=setTimeout(()=>{t.style.display='none'},6000)}
 async function say(text){
@@ -148,5 +185,5 @@ A.addEventListener('click',async e=>{
 function ask(){const q=document.getElementById('q').value.trim(),o=document.getElementById('ans');if(!q)return;if(!window.API_URL){o.textContent='ШІ-довідник ще не підключено. Скористайтеся сценаріями.';return}o.textContent='Шукаю в базі…';fetch(window.API_URL+'/api/ask',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question:q})}).then(r=>r.json()).then(j=>{o.textContent=j.answer||j.error||'Помилка'}).catch(()=>{o.textContent='Немає зв’язку. Скористайтеся сценаріями.'})}
 A.addEventListener('click',e=>{if(e.target.closest('[data-ask]'))ask()});
 if('serviceWorker' in navigator&&/^https?:/.test(location.protocol)&&!window.Capacitor)navigator.serviceWorker.register('sw.js').catch(()=>{});
-fetch('scenarios.json').then(r=>r.json()).then(j=>{D=j;history.replaceState({s:'home'},'');applyTheme();home()}).catch(()=>{A.innerHTML='<p class="mu">Не вдалося завантажити дані.</p>'});
+fetch('scenarios.json').then(r=>r.json()).then(j=>{D=j;history.replaceState({s:'home'},'');applyTheme();home();if(window.FIREBASE_CONFIG)fb().catch(()=>{})}).catch(()=>{A.innerHTML='<p class="mu">Не вдалося завантажити дані.</p>'});
 </script></body></html>
